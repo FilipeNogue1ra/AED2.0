@@ -139,19 +139,24 @@ int main (int argc, char *argv[])
  */
 static void arrive(int id)
 {    
-    if (semDown (semgid, sh->mutex) == -1)  {                                                     /* enter critical region */
-        perror ("error on the up operation for semaphore access (PL)");
-        exit (EXIT_FAILURE);
+    // Entrar na região crítica
+    if (semDown(semgid, sh->mutex) == -1) {
+        perror("erro na operação down para acesso ao semáforo (PL)");
+        exit(EXIT_FAILURE);
     }
 
-    /* TODO: insert your code here */
-    
-    if (semUp (semgid, sh->mutex) == -1) {                                                         /* exit critical region */
-        perror ("error on the down operation for semaphore access (PL)");
-        exit (EXIT_FAILURE);
+    // Atualizar o estado do jogador para "chegando"
+    sh->fSt.st.playerStat[id] = ARRIVING;
+    saveState(nFic, &sh->fSt);
+
+    // Sair da região crítica
+    if (semUp(semgid, sh->mutex) == -1) {
+        perror("erro na operação up para acesso ao semáforo (PL)");
+        exit(EXIT_FAILURE);
     }
 
-    usleep((200.0*random())/(RAND_MAX+1.0)+50.0);
+    // Simular o tempo de chegada do jogador
+    usleep((200.0 * random()) / (RAND_MAX + 1.0) + 50.0);
 }
 
 /**
@@ -169,26 +174,35 @@ static void arrive(int id)
  *  \return id of player team (0 for late goalies; 1 for team 1; 2 for team 2)
  *
  */
-static int playerConstituteTeam (int id)
+static int playerConstituteTeam(int id)
 {
-    int ret = 0;
+    int team = 0;
 
-    if (semDown (semgid, sh->mutex) == -1)  {                                                     /* enter critical region */
-        perror ("error on the up operation for semaphore access (PL)");
-        exit (EXIT_FAILURE);
+    // Entrar na região crítica
+    if (semDown(semgid, sh->mutex) == -1) {
+        perror("erro na operação down para acesso ao semáforo (PL)");
+        exit(EXIT_FAILURE);
     }
 
-
-    /* TODO: insert your code here */
-    
-    if (semUp (semgid, sh->mutex) == -1) {                                                         /* exit critical region */
-        perror ("error on the down operation for semaphore access (PL)");
-        exit (EXIT_FAILURE);
+    // Verificar se há jogadores e guarda-redes suficientes para formar uma equipe
+    if (sh->fSt.playersFree >= NUMTEAMPLAYERS && sh->fSt.goaliesFree >= NUMTEAMGOALIES) {
+        team = sh->fSt.teamId++;
+        sh->fSt.playersFree -= NUMTEAMPLAYERS;
+        sh->fSt.goaliesFree -= NUMTEAMGOALIES;
+        sh->fSt.st.playerStat[id] = FORMING_TEAM;
+        saveState(nFic, &sh->fSt);
+    } else {
+        sh->fSt.st.playerStat[id] = LATE;
+        saveState(nFic, &sh->fSt);
     }
 
-    /* TODO: insert your code here */
+    // Sair da região crítica
+    if (semUp(semgid, sh->mutex) == -1) {
+        perror("erro na operação up para acesso ao semáforo (PL)");
+        exit(EXIT_FAILURE);
+    }
 
-    return ret;
+    return team;
 }
 
 /**
@@ -200,22 +214,29 @@ static int playerConstituteTeam (int id)
  *  \param id   player id
  *  \param team player team
  */
-static void waitReferee (int id, int team)
+static void waitReferee(int id, int team)
 {
-    if (semDown (semgid, sh->mutex) == -1)  {                                                     /* enter critical region */
-        perror ("error on the up operation for semaphore access (PL)");
-        exit (EXIT_FAILURE);
+    // Esperar pelo árbitro
+    if (semDown(semgid, sh->playersWaitReferee) == -1) {
+        perror("erro na operação down para acesso ao semáforo (PL)");
+        exit(EXIT_FAILURE);
     }
 
-    /* TODO: insert your code here */
-
-    if (semUp (semgid, sh->mutex) == -1) {                                                         /* exit critical region */
-        perror ("error on the down operation for semaphore access (PL)");
-        exit (EXIT_FAILURE);
+    // Entrar na região crítica
+    if (semDown(semgid, sh->mutex) == -1) {
+        perror("erro na operação down para acesso ao semáforo (PL)");
+        exit(EXIT_FAILURE);
     }
 
-    /* TODO: insert your code here */
+    // Atualizar o estado do jogador para "jogando"
+    sh->fSt.st.playerStat[id] = PLAYING;
+    saveState(nFic, &sh->fSt);
 
+    // Sair da região crítica
+    if (semUp(semgid, sh->mutex) == -1) {
+        perror("erro na operação up para acesso ao semáforo (PL)");
+        exit(EXIT_FAILURE);
+    }
 }
 
 /**
@@ -227,22 +248,29 @@ static void waitReferee (int id, int team)
  *  \param id   player id
  *  \param team player team
  */
-static void playUntilEnd (int id, int team)
+static void playUntilEnd(int id, int team)
 {
-    if (semDown (semgid, sh->mutex) == -1)  {                                                     /* enter critical region */
-        perror ("error on the up operation for semaphore access (PL)");
-        exit (EXIT_FAILURE);
+    // Esperar pelo árbitro para terminar o jogo
+    if (semDown(semgid, sh->playersWaitEnd) == -1) {
+        perror("erro na operação down para acesso ao semáforo (PL)");
+        exit(EXIT_FAILURE);
     }
 
-    /* TODO: insert your code here */
-
-    if (semUp (semgid, sh->mutex) == -1) {                                                         /* exit critical region */
-        perror ("error on the down operation for semaphore access (PL)");
-        exit (EXIT_FAILURE);
+    // Entrar na região crítica
+    if (semDown(semgid, sh->mutex) == -1) {
+        perror("erro na operação down para acesso ao semáforo (PL)");
+        exit(EXIT_FAILURE);
     }
 
-    /* TODO: insert your code here */
+    // Atualizar o estado do jogador para "terminando o jogo"
+    sh->fSt.st.playerStat[id] = ENDING_GAME;
+    saveState(nFic, &sh->fSt);
 
+    // Sair da região crítica
+    if (semUp(semgid, sh->mutex) == -1) {
+        perror("erro na operação up para acesso ao semáforo (PL)");
+        exit(EXIT_FAILURE);
+    }
 }
 
 

@@ -131,25 +131,31 @@ int main (int argc, char *argv[])
 /**
  *  \brief goalie takes some time to arrive
  *
- *  Goalie updates state and takes some time to arrive
+ *  Goalie updates state and takes some time to arrive.
  *  The internal state should be saved.
  *
+ *  \param id goalie id
  */
 static void arrive(int id)
 {    
-    if (semDown (semgid, sh->mutex) == -1)  {                                                     /* enter critical region */
-        perror ("error on the up operation for semaphore access (GL)");
-        exit (EXIT_FAILURE);
+    // Entrar na região crítica
+    if (semDown(semgid, sh->mutex) == -1)  {
+        perror("erro na operação down para acesso ao semáforo (GL)");
+        exit(EXIT_FAILURE);
     }
 
-    /* TODO: insert your code here */
-    
-    if (semUp (semgid, sh->mutex) == -1) {                                                         /* exit critical region */
-        perror ("error on the down operation for semaphore access (GL)");
-        exit (EXIT_FAILURE);
+    // Atualizar o estado do guarda-redes para "chegando"
+    sh->fSt.st.goalieStat[id] = ARRIVING;
+    saveState(nFic, &sh->fSt);
+
+    // Sair da região crítica
+    if (semUp(semgid, sh->mutex) == -1) {
+        perror("erro na operação up para acesso ao semáforo (GL)");
+        exit(EXIT_FAILURE);
     }
 
-    usleep((200.0*random())/(RAND_MAX+1.0)+60.0);
+    // Simular o tempo de chegada do guarda-redes
+    usleep((200.0 * random()) / (RAND_MAX + 1.0) + 60.0);
 }
 
 /**
@@ -167,23 +173,33 @@ static void arrive(int id)
  *  \return id of goalie team (0 for late goalies; 1 for team 1; 2 for team 2)
  *
  */
-static int goalieConstituteTeam (int id)
+static int goalieConstituteTeam(int id)
 {
     int ret = 0;
 
-    if (semDown (semgid, sh->mutex) == -1)  {                                                     /* enter critical region */
-        perror ("error on the up operation for semaphore access (GL)");
-        exit (EXIT_FAILURE);
+    // Entrar na região crítica
+    if (semDown(semgid, sh->mutex) == -1)  {
+        perror("erro na operação down para acesso ao semáforo (GL)");
+        exit(EXIT_FAILURE);
     }
 
-    /* TODO: insert your code here */
-    
-    if (semUp (semgid, sh->mutex) == -1) {                                                         /* exit critical region */
-        perror ("error on the down operation for semaphore access (GL)");
-        exit (EXIT_FAILURE);
+    // Verificar se há jogadores e guarda-redes suficientes para formar uma equipe
+    if (sh->fSt.playersFree >= NUMTEAMPLAYERS && sh->fSt.goaliesFree >= NUMTEAMGOALIES) {
+        ret = sh->fSt.teamId++;
+        sh->fSt.playersFree -= NUMTEAMPLAYERS;
+        sh->fSt.goaliesFree -= NUMTEAMGOALIES;
+        sh->fSt.st.goalieStat[id] = FORMING_TEAM;
+        saveState(nFic, &sh->fSt);
+    } else {
+        sh->fSt.st.goalieStat[id] = LATE;
+        saveState(nFic, &sh->fSt);
     }
 
-    /* TODO: insert your code here */
+    // Sair da região crítica
+    if (semUp(semgid, sh->mutex) == -1) {
+        perror("erro na operação up para acesso ao semáforo (GL)");
+        exit(EXIT_FAILURE);
+    }
 
     return ret;
 }
@@ -197,22 +213,29 @@ static int goalieConstituteTeam (int id)
  *  \param id   goalie id
  *  \param team goalie team
  */
-static void waitReferee (int id, int team)
+static void waitReferee(int id, int team)
 {
-    if (semDown (semgid, sh->mutex) == -1)  {                                                     /* enter critical region */
-        perror ("error on the up operation for semaphore access (GL)");
-        exit (EXIT_FAILURE);
+    // Esperar pelo árbitro
+    if (semDown(semgid, sh->playersWaitReferee) == -1)  {
+        perror("erro na operação down para acesso ao semáforo (GL)");
+        exit(EXIT_FAILURE);
     }
 
-    /* TODO: insert your code here */
-
-    if (semUp (semgid, sh->mutex) == -1) {                                                         /* exit critical region */
-        perror ("error on the down operation for semaphore access (GL)");
-        exit (EXIT_FAILURE);
+    // Entrar na região crítica
+    if (semDown(semgid, sh->mutex) == -1)  {
+        perror("erro na operação down para acesso ao semáforo (GL)");
+        exit(EXIT_FAILURE);
     }
 
-    /* TODO: insert your code here */
+    // Atualizar o estado do guarda-redes para "jogando"
+    sh->fSt.st.goalieStat[id] = PLAYING;
+    saveState(nFic, &sh->fSt);
 
+    // Sair da região crítica
+    if (semUp(semgid, sh->mutex) == -1) {
+        perror("erro na operação up para acesso ao semáforo (GL)");
+        exit(EXIT_FAILURE);
+    }
 }
 
 /**
@@ -224,21 +247,28 @@ static void waitReferee (int id, int team)
  *  \param id   goalie id
  *  \param team goalie team
  */
-static void playUntilEnd (int id, int team)
+static void playUntilEnd(int id, int team)
 {
-    if (semDown (semgid, sh->mutex) == -1)  {                                                     /* enter critical region */
-        perror ("error on the up operation for semaphore access (GL)");
-        exit (EXIT_FAILURE);
+    // Esperar pelo árbitro para terminar o jogo
+    if (semDown(semgid, sh->playersWaitEnd) == -1)  {
+        perror("erro na operação down para acesso ao semáforo (GL)");
+        exit(EXIT_FAILURE);
     }
 
-    /* TODO: insert your code here */
-
-    if (semUp (semgid, sh->mutex) == -1) {                                                         /* exit critical region */
-        perror ("error on the down operation for semaphore access (GL)");
-        exit (EXIT_FAILURE);
+    // Entrar na região crítica
+    if (semDown(semgid, sh->mutex) == -1)  {
+        perror("erro na operação down para acesso ao semáforo (GL)");
+        exit(EXIT_FAILURE);
     }
 
-    /* TODO: insert your code here */
-    
+    // Atualizar o estado do guarda-redes para "terminando o jogo"
+    sh->fSt.st.goalieStat[id] = ENDING_GAME;
+    saveState(nFic, &sh->fSt);
+
+    // Sair da região crítica
+    if (semUp(semgid, sh->mutex) == -1) {
+        perror("erro na operação up para acesso ao semáforo (GL)");
+        exit(EXIT_FAILURE);
+    }
 }
 
