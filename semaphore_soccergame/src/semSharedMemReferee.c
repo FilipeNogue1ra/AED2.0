@@ -131,9 +131,8 @@ int main (int argc, char *argv[])
 /**
  *  \brief referee takes some time to arrive
  *
- *  Referee updates state and takes some time to arrive
+ *  Referee updates state and takes some time to arrive.
  *  The internal state should be saved.
- *
  */
 static void arrive()
 {
@@ -160,9 +159,8 @@ static void arrive()
 /**
  *  \brief referee waits for teams to be formed
  *
- *  Referee updates state and waits for the 2 teams to be completely formed
+ *  Referee updates state and waits for the 2 teams to be completely formed.
  *  The internal state should be saved.
- *
  */
 static void waitForTeams()
 {
@@ -191,9 +189,8 @@ static void waitForTeams()
 /**
  *  \brief referee starts game
  *
- *  Referee updates state and notifies players and goalies to start match
+ *  Referee updates state and notifies players and goalies to start match.
  *  The internal state should be saved.
- *
  */
 static void startGame()
 {
@@ -223,9 +220,8 @@ static void startGame()
 /**
  *  \brief referee takes some time to allow game to finish
  *
- *  Referee updates state and takes some time to finish the game 
+ *  Referee updates state and takes some time to finish the game.
  *  The internal state should be saved.
- *
  */
 static void play()
 {
@@ -252,9 +248,8 @@ static void play()
 /**
  *  \brief referee ends game
  *
- *  Referee updates state and notifies players and goalies to end match
+ *  Referee updates state and notifies players and goalies to end match.
  *  The internal state should be saved.
- *
  */
 static void endGame()
 {

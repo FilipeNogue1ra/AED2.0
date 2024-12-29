@@ -171,11 +171,10 @@ static void arrive(int id)
  *  \param id goalie id
  * 
  *  \return id of goalie team (0 for late goalies; 1 for team 1; 2 for team 2)
- *
  */
 static int goalieConstituteTeam(int id)
 {
-    int ret = 0;
+    int team = 0;
 
     // Entrar na região crítica
     if (semDown(semgid, sh->mutex) == -1)  {
@@ -184,14 +183,15 @@ static int goalieConstituteTeam(int id)
     }
 
     // Verificar se há jogadores e guarda-redes suficientes para formar uma equipe
-    if (sh->fSt.playersFree >= NUMTEAMPLAYERS && sh->fSt.goaliesFree >= NUMTEAMGOALIES) {
-        ret = sh->fSt.teamId++;
+    if (sh->fSt.playersFree >= NUMTEAMPLAYERS && sh->fSt.goaliesFree + 1 >= NUMTEAMGOALIES) {
+        team = sh->fSt.teamId++;
         sh->fSt.playersFree -= NUMTEAMPLAYERS;
         sh->fSt.goaliesFree -= NUMTEAMGOALIES;
         sh->fSt.st.goalieStat[id] = FORMING_TEAM;
         saveState(nFic, &sh->fSt);
     } else {
-        sh->fSt.st.goalieStat[id] = LATE;
+        sh->fSt.goaliesFree++;
+        sh->fSt.st.goalieStat[id] = WAITING_TEAM;
         saveState(nFic, &sh->fSt);
     }
 
@@ -201,7 +201,7 @@ static int goalieConstituteTeam(int id)
         exit(EXIT_FAILURE);
     }
 
-    return ret;
+    return team;
 }
 
 /**
@@ -227,8 +227,8 @@ static void waitReferee(int id, int team)
         exit(EXIT_FAILURE);
     }
 
-    // Atualizar o estado do guarda-redes para "jogando"
-    sh->fSt.st.goalieStat[id] = PLAYING;
+    // Atualizar o estado do guarda-redes para "esperando início do jogo"
+    sh->fSt.st.goalieStat[id] = (team == 1) ? WAITING_START_1 : WAITING_START_2;
     saveState(nFic, &sh->fSt);
 
     // Sair da região crítica
@@ -261,8 +261,8 @@ static void playUntilEnd(int id, int team)
         exit(EXIT_FAILURE);
     }
 
-    // Atualizar o estado do guarda-redes para "terminando o jogo"
-    sh->fSt.st.goalieStat[id] = ENDING_GAME;
+    // Atualizar o estado do guarda-redes para "jogando"
+    sh->fSt.st.goalieStat[id] = (team == 1) ? PLAYING_1 : PLAYING_2;
     saveState(nFic, &sh->fSt);
 
     // Sair da região crítica

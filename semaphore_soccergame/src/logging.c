@@ -26,6 +26,15 @@
 
 /* internal functions */
 
+/** \brief previous state of players */
+static char prevPlayerStat[NUMPLAYERS];
+
+/** \brief previous state of goalies */
+static char prevGoalieStat[NUMGOALIES];
+
+/** \brief previous state of referee */
+static char prevRefereeStat;
+
 static FILE *openLog(char nFic[], char mode[])
 {
     FILE *fic;
@@ -109,6 +118,25 @@ void createLog (char nFic[], FULL_STAT *p_fSt)
     fprintf (fic, "%21cSoccerGame - Description of the internal state\n\n", ' ');
     printHeader(fic, p_fSt);
 
+    // Inicializar os estados anteriores e escrever a primeira linha de estados
+    int p;
+    for (p = 0; p < NUMPLAYERS; p++) {
+        fprintf(fic, "%4c", p_fSt->st.playerStat[p]);
+    }
+
+    fprintf(fic, " ");
+
+    int g;
+    for (g = 0; g < NUMGOALIES; g++) {
+        fprintf(fic, "%4c", p_fSt->st.goalieStat[g]);
+    }
+
+    fprintf(fic, " ");
+
+    fprintf(fic, "%4c", p_fSt->st.refereeStat);
+
+    fprintf(fic, "\n");
+
     closeLog(fic);
 }
 
@@ -132,23 +160,22 @@ void saveState (char nFic[], FULL_STAT *p_fSt)
     fic = openLog(nFic,"a");
 
     int p;
-    for(p=0; p < p_fSt->nPlayers; p++) {
-        fprintf(fic,"%4c",p_fSt->st.playerStat[p]);
+    for (p = 0; p < p_fSt->nPlayers; p++) {
+        fprintf(fic, "%4c", p_fSt->st.playerStat[p]);
     }
 
-    fprintf(fic," ");
+    fprintf(fic, " ");
 
     int g;
-    for(g=0; g < p_fSt->nGoalies; g++) {
-        fprintf(fic,"%4c",p_fSt->st.goalieStat[g]);
+    for (g = 0; g < p_fSt->nGoalies; g++) {
+        fprintf(fic, "%4c", p_fSt->st.goalieStat[g]);
     }
 
-    fprintf(fic," ");
+    fprintf(fic, " ");
 
-    fprintf(fic,"%4c",p_fSt->st.refereeStat);
+    fprintf(fic, "%4c", p_fSt->st.refereeStat);
 
-    fprintf(fic,"\n");
+    fprintf(fic, "\n");
 
     closeLog(fic);
 }
-

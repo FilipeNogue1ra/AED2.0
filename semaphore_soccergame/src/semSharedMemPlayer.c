@@ -133,9 +133,10 @@ int main (int argc, char *argv[])
 /**
  *  \brief player takes some time to arrive
  *
- *  Player updates state and takes some time to arrive
+ *  Player updates state and takes some time to arrive.
  *  The internal state should be saved.
  *
+ *  \param id player id
  */
 static void arrive(int id)
 {    
@@ -172,7 +173,6 @@ static void arrive(int id)
  *  \param id player id
  * 
  *  \return id of player team (0 for late goalies; 1 for team 1; 2 for team 2)
- *
  */
 static int playerConstituteTeam(int id)
 {
@@ -185,14 +185,15 @@ static int playerConstituteTeam(int id)
     }
 
     // Verificar se há jogadores e guarda-redes suficientes para formar uma equipe
-    if (sh->fSt.playersFree >= NUMTEAMPLAYERS && sh->fSt.goaliesFree >= NUMTEAMGOALIES) {
+    if (sh->fSt.playersFree + 1 >= NUMTEAMPLAYERS && sh->fSt.goaliesFree >= NUMTEAMGOALIES) {
         team = sh->fSt.teamId++;
         sh->fSt.playersFree -= NUMTEAMPLAYERS;
         sh->fSt.goaliesFree -= NUMTEAMGOALIES;
         sh->fSt.st.playerStat[id] = FORMING_TEAM;
         saveState(nFic, &sh->fSt);
     } else {
-        sh->fSt.st.playerStat[id] = LATE;
+        sh->fSt.playersFree++;
+        sh->fSt.st.playerStat[id] = WAITING_TEAM;
         saveState(nFic, &sh->fSt);
     }
 
@@ -208,7 +209,7 @@ static int playerConstituteTeam(int id)
 /**
  *  \brief player waits for referee to start match
  *
- *  The player updates its state and waits for referee to end match.  
+ *  The player updates its state and waits for referee to start match.  
  *  The internal state should be saved.
  *
  *  \param id   player id
@@ -228,8 +229,8 @@ static void waitReferee(int id, int team)
         exit(EXIT_FAILURE);
     }
 
-    // Atualizar o estado do jogador para "jogando"
-    sh->fSt.st.playerStat[id] = PLAYING;
+    // Atualizar o estado do jogador para "esperando início do jogo"
+    sh->fSt.st.playerStat[id] = (team == 1) ? WAITING_START_1 : WAITING_START_2;
     saveState(nFic, &sh->fSt);
 
     // Sair da região crítica
@@ -262,8 +263,8 @@ static void playUntilEnd(int id, int team)
         exit(EXIT_FAILURE);
     }
 
-    // Atualizar o estado do jogador para "terminando o jogo"
-    sh->fSt.st.playerStat[id] = ENDING_GAME;
+    // Atualizar o estado do jogador para "jogando"
+    sh->fSt.st.playerStat[id] = (team == 1) ? PLAYING_1 : PLAYING_2;
     saveState(nFic, &sh->fSt);
 
     // Sair da região crítica
